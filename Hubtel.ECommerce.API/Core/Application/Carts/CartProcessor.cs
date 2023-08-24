@@ -3,6 +3,7 @@ using Hubtel.ECommerce.API.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -79,7 +80,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             try
             {
                 var cart = await Task.Run(() => Carts.SingleOrDefault(x => x.UserId == userId));
-                if (cart == null) return null;
+                if (cart == null) return new CartDto { UserId = userId, Items = new List<CartEntryDto>() };
 
                 var output = (CartDto)cart;
                 if (filter != null)
