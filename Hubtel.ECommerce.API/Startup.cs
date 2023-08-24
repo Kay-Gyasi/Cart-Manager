@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using Hubtel.ECommerce.API.Core.Application;
 using Hubtel.ECommerce.API.Core.Application.Carts;
@@ -35,7 +36,8 @@ namespace Hubtel.ECommerce.API
                 .AddProcessors()
                 .AddSwagger()
                 .AddFluentValidationAutoValidation()
-                .AddFluentValidationClientsideAdapters();
+                .AddFluentValidationClientsideAdapters()
+                .AddValidatorsFromAssembly(typeof(Startup).Assembly);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
