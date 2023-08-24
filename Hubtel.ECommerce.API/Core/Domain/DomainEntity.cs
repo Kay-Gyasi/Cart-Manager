@@ -4,7 +4,7 @@ namespace Hubtel.ECommerce.API.Core.Domain
 {
     public abstract class Entity
     {
-        public int Id { get; }
+        public int Id { get; protected set; }
         public Audit? Audit { get; set; }
         public Entity AuditAs(Audit audit)
         {

@@ -1,9 +1,8 @@
 ﻿using Hubtel.ECommerce.API.Core.Domain.Entities;
 using Hubtel.ECommerce.API.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -12,17 +11,16 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
 {
     public class CartProcessor
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<CartProcessor> _logger;
         private readonly AppDbContext _dbContext;
+        private IQueryable<Cart> Carts => _dbContext.Carts
+                                            .Include(x => x.User)
+                                            .Include(x => x.CartEntries)
+                                            .ThenInclude(x => x.Item);
 
-        // TODO: Input validation
-        // TODO: Exception handling
-        // TODO: Auto migrations
-        public CartProcessor(IHttpContextAccessor httpContextAccessor, ILogger<CartProcessor> logger,
+        public CartProcessor(ILogger<CartProcessor> logger,
             AppDbContext dbContext)
         {
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
             _dbContext = dbContext;
         }
@@ -31,15 +29,8 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
         {
             try
             {
-                var userId = GetUserId();
-                if (userId == null)
-                {
-                    _logger.LogError("User Id is null");
-                    return null;
-                }
-
-                var cartEntries = command.CartEntries.Select(x => CartEntry.Create(x.ItemId, x.Quantity));
-                var cart = _dbContext.Carts.SingleOrDefault(x => x.UserId == userId);
+                var cartEntries = command.CartEntries.Select(x => CartEntry.Create(x.ItemId, x.Quantity ?? 0));
+                var cart = Carts.SingleOrDefault(x => x.UserId == command.UserId);
                 if (cart != null)
                 {
                     cart.AddToCart(cartEntries);
@@ -48,9 +39,9 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
                     return cart.Id;
                 }
 
-                cart ??= Cart.Create(userId ?? 0);
+                cart ??= Cart.Create(command.UserId);
                 cart.AddToCart(cartEntries);
-                await _dbContext.AddAsync(cart);
+                await _dbContext.Carts.AddAsync(cart);
                 await _dbContext.SaveChangesAsync();
                 return cart.Id;
             }
@@ -61,44 +52,57 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             }
         }
 
-        public async Task<int?> RemoveFromCart(int itemId)
+        public async Task RemoveFromCart(int itemId, int userId)
         {
-            var userId = GetUserId();
-            if (userId == null)
+            try
             {
-                _logger.LogError("User Id is null");
-                return null;
-            }
+                var cart = Carts.SingleOrDefault(x => x.UserId == userId);
+                if (cart == null)
+                {
+                    cart = Cart.Create(userId);
+                    await _dbContext.SaveChangesAsync();
+                    return;
+                }
 
-            var cart = _dbContext.Carts.SingleOrDefault(x => x.UserId == userId);
-            if (cart == null)
-            {
-                cart = Cart.Create(userId ?? 0);
+                cart.RemoveFromCart(itemId);
                 await _dbContext.SaveChangesAsync();
-                return cart.Id;
             }
-
-            cart.RemoveFromCart(itemId);
-            await _dbContext.SaveChangesAsync();
-            return cart.Id;
-        }
-
-        public async Task<CartDto?> GetCart()
-        {
-            var userId = GetUserId();
-            if (userId == null)
+            catch (Exception ex)
             {
-                _logger.LogError("User Id is null");
-                return null;
+                _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
+                throw;
             }
-
-            return new CartDto();
         }
 
-        private int? GetUserId()
+        public async Task<CartDto?> GetCart(int userId, string? filter)
         {
-            var userId = _httpContextAccessor.HttpContext.User.FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-            return Convert.ToInt32(userId);
+            try
+            {
+                var cart = await Task.Run(() => Carts.SingleOrDefault(x => x.UserId == userId));
+                if (cart == null) return null;
+
+                var output = (CartDto)cart;
+                if (filter != null)
+                {
+                    output.Items = output.Items.Where(x => 
+                                                x.ItemName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                                                || x.Quantity.ToString() == filter).ToList();
+                }
+
+                foreach (var item in output.Items)
+                {
+                    var price = await Task.Run(() => (_dbContext.Items.SingleOrDefault(x => x.Id == item.ItemId))?.UnitPrice);
+                    if (price == null) continue;
+                    item.UnitPrice = price;
+                }
+
+                return output;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
+                throw;
+            }
         }
     }
 }

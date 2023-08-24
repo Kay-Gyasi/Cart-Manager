@@ -16,9 +16,9 @@
         public static CartEntry Create(int itemId, int quantity)
             => new CartEntry(itemId, quantity);
 
-        public CartEntry AddToQuantity(int quantityToAdd)
+        public CartEntry HasQuantity(int quantity)
         {
-            Quantity += quantityToAdd;
+            Quantity += quantity;
             return this;
         }
     }

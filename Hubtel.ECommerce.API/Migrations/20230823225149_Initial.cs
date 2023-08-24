@@ -9,13 +9,14 @@ namespace Hubtel.ECommerce.API.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Item",
+                name: "Items",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: true),
+                    Name = table.Column<string>(type: "text", nullable: false),
                     QuantityAvailable = table.Column<int>(type: "integer", nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "numeric", nullable: false),
                     Audit_CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Audit_UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Audit_CreatedBy = table.Column<string>(type: "text", nullable: true),
@@ -24,17 +25,17 @@ namespace Hubtel.ECommerce.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Item", x => x.Id);
+                    table.PrimaryKey("PK_Items", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "User",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
                     CartId = table.Column<int>(type: "integer", nullable: true),
                     Audit_CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Audit_UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
@@ -44,11 +45,11 @@ namespace Hubtel.ECommerce.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_User", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Cart",
+                name: "Carts",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -63,30 +64,29 @@ namespace Hubtel.ECommerce.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Cart", x => x.Id);
+                    table.PrimaryKey("PK_Carts", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Cart_Item_ItemId",
+                        name: "FK_Carts_Items_ItemId",
                         column: x => x.ItemId,
-                        principalTable: "Item",
+                        principalTable: "Items",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Cart_User_UserId",
+                        name: "FK_Carts_Users_UserId",
                         column: x => x.UserId,
-                        principalTable: "User",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "CartEntry",
+                name: "CartEntries",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ItemId = table.Column<int>(type: "integer", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
-                    UnitPrice = table.Column<decimal>(type: "numeric", nullable: false),
                     CartId = table.Column<int>(type: "integer", nullable: true),
                     Audit_CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Audit_UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
@@ -96,56 +96,56 @@ namespace Hubtel.ECommerce.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CartEntry", x => x.Id);
+                    table.PrimaryKey("PK_CartEntries", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CartEntry_Cart_CartId",
+                        name: "FK_CartEntries_Carts_CartId",
                         column: x => x.CartId,
-                        principalTable: "Cart",
+                        principalTable: "Carts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_CartEntry_Item_ItemId",
+                        name: "FK_CartEntries_Items_ItemId",
                         column: x => x.ItemId,
-                        principalTable: "Item",
+                        principalTable: "Items",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Cart_ItemId",
-                table: "Cart",
-                column: "ItemId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Cart_UserId",
-                table: "Cart",
-                column: "UserId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CartEntry_CartId",
-                table: "CartEntry",
+                name: "IX_CartEntries_CartId",
+                table: "CartEntries",
                 column: "CartId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CartEntry_ItemId",
-                table: "CartEntry",
+                name: "IX_CartEntries_ItemId",
+                table: "CartEntries",
                 column: "ItemId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Carts_ItemId",
+                table: "Carts",
+                column: "ItemId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Carts_UserId",
+                table: "Carts",
+                column: "UserId",
+                unique: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "CartEntry");
+                name: "CartEntries");
 
             migrationBuilder.DropTable(
-                name: "Cart");
+                name: "Carts");
 
             migrationBuilder.DropTable(
-                name: "Item");
+                name: "Items");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "Users");
         }
     }
 }

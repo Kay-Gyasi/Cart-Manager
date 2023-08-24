@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hubtel.ECommerce.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230823142817_Update1")]
-    partial class Update1
+    [Migration("20230823225149_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

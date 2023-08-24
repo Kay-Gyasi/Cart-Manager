@@ -1,6 +1,7 @@
+using FluentValidation.AspNetCore;
+using Hubtel.ECommerce.API.Core.Application;
 using Hubtel.ECommerce.API.Core.Application.Carts;
 using Hubtel.ECommerce.API.Core.Application.Items;
-using Hubtel.ECommerce.API.Core.Application.Users;
 using Hubtel.ECommerce.API.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using System;
 
 namespace Hubtel.ECommerce.API
 {
@@ -23,16 +25,22 @@ namespace Hubtel.ECommerce.API
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers(opt =>
+            {
+                opt.Filters.Add<ValidationAttribute>();
+            });
             services.AddHttpContextAccessor();
             services.AddSingleton<AuditEntitiesInterceptor>();
             services.RegisterDbContext(Configuration)
                 .AddProcessors()
-                .AddSwagger();
+                .AddSwagger()
+                .AddFluentValidationAutoValidation()
+                .AddFluentValidationClientsideAdapters();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.RunMigrations();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -86,9 +94,26 @@ namespace Hubtel.ECommerce.API
         public static IServiceCollection AddProcessors(this IServiceCollection services)
         {
             services.AddScoped<CartProcessor>()
-                .AddScoped<UserProcessor>()
-                .AddScoped<ItemProcessor>();
+                .AddScoped<ItemProcessor>()
+                .AddScoped<Initializer>();
             return services;
+        }
+
+        public static void RunMigrations(this IApplicationBuilder app)
+        {
+            using var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var context = serviceScope.ServiceProvider.GetService<AppDbContext>();
+            if (Environment.CommandLine.Contains("migrations add")) return;
+            try
+            {
+                context?.Database.Migrate();
+                var initializer = serviceScope.ServiceProvider.GetService<Initializer>();
+                initializer?.Initialize().GetAwaiter().GetResult();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

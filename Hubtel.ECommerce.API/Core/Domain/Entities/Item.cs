@@ -10,6 +10,14 @@ namespace Hubtel.ECommerce.API.Core.Domain.Entities
             QuantityAvailable = quantityAvailable;
             UnitPrice = unitPrice;
         }
+        
+        private Item(int id, string name, int quantityAvailable, decimal unitPrice)
+        {
+            Id = id;
+            Name = name;
+            QuantityAvailable = quantityAvailable;
+            UnitPrice = unitPrice;
+        }
 
         public string Name { get; private set; }
         public int QuantityAvailable { get; private set; }
@@ -21,6 +29,8 @@ namespace Hubtel.ECommerce.API.Core.Domain.Entities
 
         public static Item Create(string name, int quantityAvailable, decimal unitPrice)
             => new Item(name, quantityAvailable, unitPrice);
+        public static Item Create(int id, string name, int quantityAvailable, decimal unitPrice)
+            => new Item(id, name, quantityAvailable, unitPrice);
 
         public Item WithName(string name)
         {

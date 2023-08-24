@@ -7,6 +7,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Items
         public int? Id { get; set; }
         public string Name { get; set; }
         public int QuantityAvailable { get; set; }
+        public decimal UnitPrice { get; set; }
 
         public static explicit operator ItemDto(Item item)
         {
@@ -15,6 +16,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Items
                 Id = item.Id,
                 Name = item.Name,
                 QuantityAvailable = item.QuantityAvailable,
+                UnitPrice = item.UnitPrice,
             };
         }
     }

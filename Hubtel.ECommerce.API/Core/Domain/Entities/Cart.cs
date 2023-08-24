@@ -26,7 +26,7 @@ namespace Hubtel.ECommerce.API.Core.Domain.Entities
                 if (_cartEntries.Any(x => x.ItemId == entry.ItemId))
                 {
                     var originalEntry = _cartEntries.First(x => x.ItemId == entry.ItemId);
-                    originalEntry.AddToQuantity(entry.Quantity);
+                    originalEntry.HasQuantity(entry.Quantity); // factor in available quantity in stock
                     continue;
                 }
 

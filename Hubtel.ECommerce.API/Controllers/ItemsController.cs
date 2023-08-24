@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace Hubtel.ECommerce.API.Presentation.Controllers
+namespace Hubtel.ECommerce.API.Controllers
 {
     public class ItemsController : Controller
     {
@@ -16,7 +16,8 @@ namespace Hubtel.ECommerce.API.Presentation.Controllers
         [HttpGet("{itemId}")]
         public async Task<IActionResult> Get(int itemId)
         {
-            return Ok();
+            var result = await _processor.GetAsync(itemId);
+            return Ok(result);
         }
     }
 }

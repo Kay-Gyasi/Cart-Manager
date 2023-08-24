@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -26,17 +24,12 @@ namespace Hubtel.ECommerce.API.Infrastructure.Persistence
             var dbContext = eventData.Context;
             if (dbContext is null) return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-            var userId = _httpContextAccessor.HttpContext?.User?
-                .FindFirst(JwtRegisteredClaimNames.NameId)?.Value;
-            var role = _httpContextAccessor.HttpContext?.User?
-                .FindFirst(ClaimTypes.Role)?.Value;
-            var username = userId != null ? string.Join(" - ", role, userId) : "sysadmin";
+            string username = "sysadmin";
 
             foreach (EntityEntry entry in dbContext.ChangeTracker.Entries()
                          .Where(x => x.State == EntityState.Added || x.State == EntityState.Modified))
             {
-                if (entry.Entity.GetType() != typeof(Entity)) continue;
-                Entity entity = entry.Entity as Entity;
+                if (!(entry.Entity is Entity entity)) continue;
                 entity.Audit ??= Audit.Create();
                 entity.Audit.WasCreatedBy(username);
                 entity.Audit.Update(username);
@@ -45,8 +38,7 @@ namespace Hubtel.ECommerce.API.Infrastructure.Persistence
             foreach (var entry in dbContext.ChangeTracker.Entries()
                          .Where(x => x.State is EntityState.Deleted))
             {
-                if (entry.Entity.GetType() != typeof(Entity)) continue;
-                Entity entity = entry.Entity as Entity;
+                if (!(entry.Entity is Entity entity)) continue;
                 entity.Audit?.Update(username);
                 entity.Audit?.Delete();
             }

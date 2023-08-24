@@ -1,0 +1,26 @@
+@BaseUrl=https://localhost:5001/api/v1/Carts
+@UserId=1
+@ItemId=2
+
+###
+POST {{BaseUrl}}
+Content-Type: application/json
+
+{
+  "userId": {{UserId}},
+  "cartEntries": [
+    {
+      "itemId": {{ItemId}},
+      "quantity": 15
+    }
+  ]
+}
+
+###
+DELETE {{BaseUrl}}/{{UserId}}/{{ItemId}}
+
+###
+GET {{BaseUrl}}/{{UserId}}?filter=invalidfilter
+
+###
+GET {{BaseUrl}}/{{UserId}}?filter=
