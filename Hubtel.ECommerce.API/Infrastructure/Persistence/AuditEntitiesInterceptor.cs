@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Hubtel.ECommerce.API.Core.Domain;
+using System.Security.Claims;
 
 namespace Hubtel.ECommerce.API.Infrastructure.Persistence
 {
@@ -24,7 +25,8 @@ namespace Hubtel.ECommerce.API.Infrastructure.Persistence
             var dbContext = eventData.Context;
             if (dbContext is null) return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-            string username = "sysadmin";
+            var usernameInToken = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+            string username = usernameInToken ?? "sysadmin";
 
             foreach (EntityEntry entry in dbContext.ChangeTracker.Entries()
                          .Where(x => x.State == EntityState.Added || x.State == EntityState.Modified))

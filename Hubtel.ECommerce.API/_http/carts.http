@@ -1,14 +1,15 @@
 @BaseUrl=https://localhost:5001/api/v1/Carts
-@UserId=1
+@KayToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbW9iaWxlcGhvbmUiOiIwNTU3NTExNjc3IiwianRpIjoiYjc2YTE4NWUiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MDAxIiwibmJmIjoxNjkzMTYzMDQ5LCJleHAiOjE2OTMxNjQ4NDksImlhdCI6MTY5MzE2MzA0OSwiaXNzIjoiaHVidGVsLWNhcnQtYXBpIn0.RgBcZbHrlaOXLSzBTzp4uuX7Jx_ApNAug28VQi_DyLs
+@HubtelToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbW9iaWxlcGhvbmUiOiIwNTU3NTExNjc3IiwianRpIjoiYjc2YTE4NWUiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MDAxIiwibmJmIjoxNjkzMTYzMDQ5LCJleHAiOjE2OTMxNjQ4NDksImlhdCI6MTY5MzE2MzA0OSwiaXNzIjoiaHVidGVsLWNhcnQtYXBpIn0.RgBcZbHrlaOXLSzBTzp4uuX7Jx_ApNAug28VQi_DyLs
 @ItemId=1
 
 ###
 POST {{BaseUrl}}
 Content-Type: application/json
+Authorization: Bearer {{HubtelToken}}
 
 {
-  "userId": {{UserId}},
-  "cartEntries": [
+  "items": [
     {
       "itemId": {{ItemId}},
       "quantity": 15
@@ -17,10 +18,13 @@ Content-Type: application/json
 }
 
 ###
-DELETE {{BaseUrl}}/{{UserId}}/{{ItemId}}
+DELETE {{BaseUrl}}/{{ItemId}}
+Authorization: Bearer {{HubtelToken}}
 
 ###
-GET {{BaseUrl}}/{{UserId}}?filter=invalidfilter
+GET {{BaseUrl}}?filter=invalidfilter
+Authorization: Bearer {{HubtelToken}}
 
 ###
-GET {{BaseUrl}}/{{UserId}}?filter=
+GET {{BaseUrl}}?filter=
+Authorization: Bearer {{HubtelToken}}

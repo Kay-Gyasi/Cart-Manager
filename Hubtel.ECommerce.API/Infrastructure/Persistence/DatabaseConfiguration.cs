@@ -14,17 +14,17 @@ namespace Hubtel.ECommerce.API.Infrastructure.Persistence
             builder.HasKey(x => x.Id);
             builder.OwnsOne(x => x.Audit, a =>
             {
-                a.Property(x => x.CreatedAt)
+                a.Property(x => x!.CreatedAt)
                     .IsRequired()
                     .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-                a.Property(x => x.UpdatedAt)
+                a.Property(x => x!.UpdatedAt)
                     .IsRequired();
-                a.Property(x => x.CreatedBy)
+                a.Property(x => x!.CreatedBy)
                     .IsRequired()
                     .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-                a.Property(x => x.UpdatedBy)
+                a.Property(x => x!.UpdatedBy)
                     .IsRequired();
-                a.Property(x => x.Status)
+                a.Property(x => x!.Status)
                     .HasConversion(new EnumToStringConverter<EntityStatus>());
             });
             builder.HasQueryFilter(x => x.Audit!.Status == EntityStatus.Normal);

@@ -3,15 +3,22 @@ using FluentValidation.AspNetCore;
 using Hubtel.ECommerce.API.Core.Application;
 using Hubtel.ECommerce.API.Core.Application.Carts;
 using Hubtel.ECommerce.API.Core.Application.Items;
+using Hubtel.ECommerce.API.Core.Application.Jwt;
+using Hubtel.ECommerce.API.Core.Application.Users;
+using Hubtel.ECommerce.API.Core.Domain.Entities;
 using Hubtel.ECommerce.API.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
+using System.Text;
 
 namespace Hubtel.ECommerce.API
 {
@@ -37,7 +44,27 @@ namespace Hubtel.ECommerce.API
                 .AddSwagger()
                 .AddFluentValidationAutoValidation()
                 .AddFluentValidationClientsideAdapters()
-                .AddValidatorsFromAssembly(typeof(Startup).Assembly);
+                .AddValidatorsFromAssembly(typeof(Startup).Assembly)
+                .AddIdentityCore<User>()
+                .AddRoles<IdentityRole<int>>()
+                .AddEntityFrameworkStores<AppDbContext>();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(opts =>
+                {
+                    opts.SaveToken = false;
+                    opts.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = Configuration["Jwt:ValidIssuer"],
+                        ValidAudience = Configuration["Jwt:ValidAudiences:0"],
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
+                            .GetBytes(Configuration["Jwt:SigningKeys:0:Value"] ?? ""))
+                    };
+                });
+            services.AddScoped<ITokenProvider, TokenProvider>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -58,6 +85,7 @@ namespace Hubtel.ECommerce.API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -96,8 +124,9 @@ namespace Hubtel.ECommerce.API
         public static IServiceCollection AddProcessors(this IServiceCollection services)
         {
             services.AddScoped<CartProcessor>()
-                .AddScoped<ItemProcessor>()
-                .AddScoped<Initializer>();
+                    .AddScoped<ItemProcessor>()
+                    .AddScoped<UserProcessor>()
+                    .AddScoped<Initializer>();
             return services;
         }
 

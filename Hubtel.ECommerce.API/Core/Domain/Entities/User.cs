@@ -1,33 +1,27 @@
-﻿namespace Hubtel.ECommerce.API.Core.Domain.Entities
+﻿using Microsoft.AspNetCore.Identity;
+using System;
+
+namespace Hubtel.ECommerce.API.Core.Domain.Entities
 {
-    public class User : Entity
+    public sealed class User : IdentityUser<int>
     {
-        private User(string name, string phoneNumber)
+        private User() {}
+        private User(string email, string phone)
         {
-            Name = name;
-            PhoneNumber = phoneNumber;
+            Email = email;
+            PhoneNumber = phone;
         }
 
-        private User(int id, string name, string phoneNumber)
-        {
-            Id = id;
-            Name = name;
-            PhoneNumber = phoneNumber;
-        }
-
-        public string Name { get; private set; }
-        public string PhoneNumber { get; private set; }
         public int? CartId { get; private set; }
         public Cart? Cart { get; private set; }
 
-        public static User Create(string name, string phoneNumber)
-        {
-            return new User(name, phoneNumber);
-        }
+        public static User Create(string email, string phone) 
+            => new User(email, phone);
 
-        public static User Create(int id, string name, string phoneNumber)
+        public User WithName(string userName)
         {
-            return new User(id, name, phoneNumber);
+            UserName = userName;
+            return this;
         }
     }
 }
