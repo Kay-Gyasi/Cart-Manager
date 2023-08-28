@@ -40,7 +40,6 @@ namespace Hubtel.ECommerce.API.Core.Application.Jwt
         public AuthToken GenerateToken(User user)
         {
             var identity = new ClaimsIdentity(JwtBearerDefaults.AuthenticationScheme);
-
             identity.AddClaims(new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),

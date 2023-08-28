@@ -1,5 +1,6 @@
 ﻿using Hubtel.ECommerce.API.Core.Domain.Entities;
 using Hubtel.ECommerce.API.Infrastructure.Persistence;
+using LinqKit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -79,6 +80,30 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             }
         }
 
+        public async Task<CartItemsDto> GetAllCartItems(Filter filter)
+        {
+            try
+            {
+                var cartItems = new List<CartEntry>();
+                var cartEntryFilter = PredicateBuilder.New<CartEntry>(x => true);
+                var cartFilter = PredicateBuilder.New<Cart>(x => true);
+
+                BuildFilters(filter, cartEntryFilter, cartFilter);
+
+                await Carts.Where(cartFilter).ForEachAsync(x =>
+                {
+                    cartItems.AddRange(x.CartEntries.Where(cartEntryFilter));
+                });
+
+                return (CartItemsDto) cartItems;
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
+                throw;
+            }
+        }
+
         public async Task<CartDto?> GetCart(string? filter)
         {
             try
@@ -89,7 +114,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
                 var output = (CartDto)cart;
                 if (filter != null)
                 {
-                    output.Items = output.Items.Where(x => 
+                    output.Items = output.Items.Where(x =>
                                                 x.ItemName.Contains(filter, StringComparison.OrdinalIgnoreCase)
                                                 || x.Quantity.ToString() == filter).ToList();
                 }
@@ -108,6 +133,48 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
                 _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
                 throw;
             }
+        }
+
+        private void BuildFilters(Filter filter, ExpressionStarter<CartEntry> cartEntryFilter, 
+            ExpressionStarter<Cart> cartFilter)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.PhoneNumber))
+            {
+                cartFilter.And(a => a.User.PhoneNumber == filter.PhoneNumber);
+            }
+            
+            if (!string.IsNullOrWhiteSpace(filter.Time))
+            {
+                var isTime = DateTime.TryParse(filter.Time, out var time);
+                if (isTime) cartEntryFilter.And(x => x.Audit!.UpdatedAt > time);
+            }
+            
+            if (!string.IsNullOrWhiteSpace(filter.Quantity))
+            {
+                var isNumber = int.TryParse(filter.Quantity, out var quantity);
+                if (isNumber) cartEntryFilter.And(x => x.Quantity == quantity);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.ItemName))
+            {
+                cartEntryFilter.And(x => x.ItemName.Contains(filter.ItemName, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        public class Filter
+        {
+            public Filter(string? phoneNumber, string? time, string? quantity, string? itemName)
+            {
+                PhoneNumber = phoneNumber;
+                Time = time;
+                Quantity = quantity;
+                ItemName = itemName;
+            }
+
+            public string? PhoneNumber { get; set; }
+            public string? Time { get; set; }
+            public string? Quantity { get; set; }
+            public string? ItemName { get; set; }
         }
 
         private int GetUserId()

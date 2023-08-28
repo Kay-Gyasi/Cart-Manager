@@ -25,7 +25,7 @@ namespace Hubtel.ECommerce.API.Infrastructure.Persistence
             var dbContext = eventData.Context;
             if (dbContext is null) return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-            var usernameInToken = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name)?.Value;
+            var usernameInToken = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value;
             string username = usernameInToken ?? "sysadmin";
 
             foreach (EntityEntry entry in dbContext.ChangeTracker.Entries()
