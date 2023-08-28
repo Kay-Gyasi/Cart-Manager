@@ -1,8 +1,9 @@
-﻿using Hubtel.ECommerce.API.Core.Application.Jwt;
+﻿using Hubtel.ECommerce.API.Core.Application.Exceptions;
+using Hubtel.ECommerce.API.Core.Application.Jwt;
 using Hubtel.ECommerce.API.Core.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System.IO;
+using OneOf;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -21,14 +22,14 @@ namespace Hubtel.ECommerce.API.Core.Application.Users
             _logger = logger;
         }
 
-        public async Task<AuthToken?> LoginAsync(LoginCommand command)
+        public async Task<OneOf<AuthToken, InvalidLoginException>> LoginAsync(LoginCommand command)
         {
             var user = await _userManager.FindByEmailAsync(command.Email);
 
             if (user is null || !await _userManager.CheckPasswordAsync(user, command.Password))
             {
                 _logger.LogError("Invalid login attempt");
-                return null;
+                return new InvalidLoginException();
             }
 
             return await Task.Run(() => _tokenProvider.GenerateToken(user));

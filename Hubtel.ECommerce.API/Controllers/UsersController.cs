@@ -17,8 +17,8 @@ namespace Hubtel.ECommerce.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginCommand command)
         {
             var result = await _processor.LoginAsync(command);
-            if (result == null) return BadRequest("Invalid command");
-            return Ok(result);
+            if (result.IsT1) return BadRequest(result.AsT1.Message);
+            return Ok(result.AsT0);
         }
     }
 }

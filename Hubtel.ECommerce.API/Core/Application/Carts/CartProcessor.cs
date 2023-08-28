@@ -1,9 +1,11 @@
-﻿using Hubtel.ECommerce.API.Core.Domain.Entities;
+﻿using Hubtel.ECommerce.API.Core.Application.Exceptions;
+using Hubtel.ECommerce.API.Core.Domain.Entities;
 using Hubtel.ECommerce.API.Infrastructure.Persistence;
 using LinqKit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OneOf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +33,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             _dbContext = dbContext;
         }
 
-        public async Task<int?> AddToCart(CartCommand command)
+        public async Task<OneOf<int, Exception>> AddToCart(CartCommand command)
         {
             try
             {
@@ -39,26 +41,20 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
                 var cart = Carts.SingleOrDefault(x => x.UserId == GetUserId());
                 if (cart != null)
                 {
-                    cart.AddToCart(cartEntries);
-                    await Task.Run(() => _dbContext.Carts.Update(cart));
-                    await _dbContext.SaveChangesAsync();
-                    return cart.Id;
+                    return await UpsertCartItem(cart, cartEntries, isUpdate: true);
                 }
 
-                cart ??= Cart.Create(GetUserId());
-                cart.AddToCart(cartEntries);
-                await _dbContext.Carts.AddAsync(cart);
-                await _dbContext.SaveChangesAsync();
-                return cart.Id;
+                cart = Cart.Create(GetUserId());
+                return await UpsertCartItem(cart, cartEntries);
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
-                throw;
+                return ex;
             }
         }
 
-        public async Task RemoveFromCart(int itemId)
+        public async Task<OneOf<bool, Exception>> RemoveFromCart(int itemId)
         {
             try
             {
@@ -66,21 +62,20 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
                 if (cart == null)
                 {
                     cart = Cart.Create(GetUserId());
-                    await _dbContext.SaveChangesAsync();
-                    return;
+                    return await _dbContext.SaveChangesAsync() > 0;
                 }
 
                 cart.RemoveFromCart(itemId);
-                await _dbContext.SaveChangesAsync();
+                return await _dbContext.SaveChangesAsync() > 0;
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
-                throw;
+                return ex;
             }
         }
 
-        public async Task<CartItemsDto> GetAllCartItems(Filter filter)
+        public async Task<OneOf<CartItemsDto, Exception>> GetAllCartItems(Filter filter)
         {
             try
             {
@@ -100,11 +95,11 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             catch(Exception ex)
             {
                 _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
-                throw;
+                return ex;
             }
         }
 
-        public async Task<CartDto?> GetCart(string? filter)
+        public async Task<OneOf<CartDto, Exception>> GetCart(string? filter)
         {
             try
             {
@@ -131,7 +126,7 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
             catch (Exception ex)
             {
                 _logger.LogError("Error: {Error}", JsonSerializer.Serialize(ex));
-                throw;
+                return ex;
             }
         }
 
@@ -181,6 +176,23 @@ namespace Hubtel.ECommerce.API.Core.Application.Carts
         {
             var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
             return Convert.ToInt32(userId);
+        }
+
+        private async Task<OneOf<int, Exception>> UpsertCartItem(Cart cart, IEnumerable<CartEntry> cartEntries, bool isUpdate = false)
+        {
+            cart.AddToCart(cartEntries);
+
+            foreach (var item in cart.CartEntries)
+            {
+                var itemInDb = await _dbContext.Items.SingleOrDefaultAsync(x => x.Id == item.ItemId);
+                var numberOfItemsInStock = itemInDb.QuantityAvailable;
+                if (item.Quantity > numberOfItemsInStock) return new InvalidQuantityException(item.ItemName);
+            }
+
+            if (isUpdate) await Task.Run(() => _dbContext.Carts.Update(cart));
+            else await _dbContext.Carts.AddAsync(cart);
+            await _dbContext.SaveChangesAsync();
+            return cart.Id;
         }
     }
 }
